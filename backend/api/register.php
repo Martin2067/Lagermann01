@@ -1,5 +1,9 @@
 <?php
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
 header("Content-Type: application/json");
+
 require_once "../config/db.php"; // připojení k DB
 require_once "../utils/jwt.php"; // funkce pro JWT (vytvoříme později)
 
