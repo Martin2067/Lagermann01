@@ -9,23 +9,43 @@ require_once "../config/db.php";
 $method = $_SERVER['REQUEST_METHOD'];
 
 switch ($method) {
+    // =======================
+    // GET (výpis zboží)
+    // =======================
     case "GET":
         if (isset($_GET['warehouse_id'])) {
-            $stmt = $pdo->prepare("SELECT * FROM items WHERE warehouse_id = ?");
+            // Výpis zboží z konkrétního skladu
+            $stmt = $pdo->prepare("SELECT i.*, w.name as warehouse_name 
+                                   FROM items i 
+                                   JOIN warehouses w ON i.warehouse_id = w.warehouse_id
+                                   WHERE i.warehouse_id = ?");
             $stmt->execute([$_GET['warehouse_id']]);
             echo json_encode($stmt->fetchAll());
+        } elseif (isset($_GET['company_id'])) {
+            // Výpis všeho zboží firmy
+            $stmt = $pdo->prepare("SELECT i.*, w.name as warehouse_name 
+                                   FROM items i 
+                                   JOIN warehouses w ON i.warehouse_id = w.warehouse_id
+                                   WHERE i.company_id = ?");
+            $stmt->execute([$_GET['company_id']]);
+            echo json_encode($stmt->fetchAll());
         } else {
-            echo json_encode(["error" => "Missing warehouse_id"]);
+            echo json_encode(["error" => "Missing warehouse_id or company_id"]);
         }
         break;
 
+    // =======================
+    // POST (nová položka)
+    // =======================
     case "POST":
         $data = json_decode(file_get_contents("php://input"), true);
         if (!isset($data['warehouse_id'], $data['company_id'], $data['name'])) {
             echo json_encode(["error" => "Missing required fields"]);
             exit;
         }
-        $stmt = $pdo->prepare("INSERT INTO items (warehouse_id, company_id, name, code, supplier, quantity, location_in_warehouse) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO items 
+            (warehouse_id, company_id, name, code, supplier, quantity, location_in_warehouse) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([
             $data['warehouse_id'],
             $data['company_id'],
@@ -38,13 +58,18 @@ switch ($method) {
         echo json_encode(["success" => true, "id" => $pdo->lastInsertId()]);
         break;
 
+    // =======================
+    // PUT (úprava položky)
+    // =======================
     case "PUT":
         $data = json_decode(file_get_contents("php://input"), true);
         if (!isset($data['item_id'])) {
             echo json_encode(["error" => "Missing item_id"]);
             exit;
         }
-        $stmt = $pdo->prepare("UPDATE items SET name=?, code=?, supplier=?, quantity=?, location_in_warehouse=? WHERE item_id=?");
+        $stmt = $pdo->prepare("UPDATE items 
+                               SET name=?, code=?, supplier=?, quantity=?, location_in_warehouse=? 
+                               WHERE item_id=?");
         $stmt->execute([
             $data['name'] ?? null,
             $data['code'] ?? null,
@@ -56,6 +81,9 @@ switch ($method) {
         echo json_encode(["success" => true]);
         break;
 
+    // =======================
+    // DELETE (smazání položky)
+    // =======================
     case "DELETE":
         parse_str(file_get_contents("php://input"), $data);
         if (!isset($data['item_id'])) {
