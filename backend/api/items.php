@@ -85,7 +85,7 @@ switch ($method) {
     // DELETE (smazání položky)
     // =======================
     case "DELETE":
-        parse_str(file_get_contents("php://input"), $data);
+        $data = json_decode(file_get_contents("php://input"), true);
         if (!isset($data['item_id'])) {
             echo json_encode(["error" => "Missing item_id"]);
             exit;
